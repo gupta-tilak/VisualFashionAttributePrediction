@@ -1,0 +1,103 @@
+labelId,taskId,labelName,taskName
+1,1,black,color
+2,1,navy blue,color
+3,1,white,color
+4,1,yellow,color
+5,1,peach,color
+6,1,purple,color
+7,1,red,color
+8,1,blue,color
+9,1,maroon,color
+10,1,pink,color
+11,1,grey,color
+12,1,multicolor,color
+13,1,green,color
+14,1,orange,color
+15,1,cream,color
+16,1,default,color
+17,2,round,neck
+18,2,polo,neck
+19,3,solid,pattern
+20,3,printed,pattern
+21,3,woven design,pattern
+22,3,zari woven,pattern
+23,3,default,pattern
+24,4,solid,print_or_pattern_type
+25,4,typography,print_or_pattern_type
+26,4,quirky,print_or_pattern_type
+27,4,floral,print_or_pattern_type
+28,4,graphic,print_or_pattern_type
+29,4,default,print_or_pattern_type
+30,4,funky print,print_or_pattern_type
+31,4,botanical,print_or_pattern_type
+32,4,ethnic motif,print_or_pattern_type
+33,4,elephant,print_or_pattern_type
+34,4,applique,print_or_pattern_type
+35,4,checked,print_or_pattern_type
+36,4,peacock,print_or_pattern_type
+37,5,short sleeves,sleeve_length
+38,5,long sleeves,sleeve_length
+39,5,sleeveless,sleeve_length
+40,5,three-quarter sleeves,sleeve_length
+41,5,default,sleeve_length
+42,6,solid,blouse_pattern
+43,6,same as saree,blouse_pattern
+44,6,default,blouse_pattern
+45,6,same as border,blouse_pattern
+46,7,solid,border
+47,7,zari,border
+48,7,no border,border
+49,7,woven design,border
+50,7,temple border,border
+51,7,default,border
+52,8,small border,border_width
+53,8,big border,border_width
+54,8,no border,border_width
+55,9,traditional,occasion
+56,9,wedding,occasion
+57,9,daily,occasion
+58,9,party,occasion
+59,9,casual,occasion
+60,10,jacquard,ornamentation
+61,10,tassels and latkans,ornamentation
+62,10,net,ornamentation
+63,10,default,ornamentation
+64,11,same as saree,pallu_details
+65,11,woven design,pallu_details
+66,11,zari woven,pallu_details
+67,11,default,pallu_details
+68,14,no,transparency
+69,14,yes,transparency
+70,16,loose,fit_shape
+71,16,regular,fit_shape
+72,16,fitted,fit_shape
+73,16,default,fit_shape
+74,16,boxy,fit_shape
+75,16,straight,fit_shape
+76,16,a-line,fit_shape
+77,17,long,length
+78,17,knee length,length
+79,17,regular,length
+80,17,calf length,length
+81,17,crop,length
+82,25,default,surface_styling
+83,25,applique,surface_styling
+84,25,tie-ups,surface_styling
+85,25,waist tie-ups,surface_styling
+86,25,knitted,surface_styling
+87,25,ruffles,surface_styling
+88,26,regular sleeves,sleeve_styling
+89,26,sleeveless,sleeve_styling
+90,26,puff sleeves,sleeve_styling
+91,26,default,sleeve_styling
+92,26,regular,sleeve_styling
+93,26,cuffed sleeves,sleeve_styling
+94,27,sweetheart neck,neck_collar	
+95,27,v-neck,neck_collar	
+96,27,high,neck_collar	
+97,27,default,neck_collar	
+98,27,round neck,neck_collar	
+99,27,square neck,neck_collar	
+100,27,stylised,neck_collar	
+101,28,party,ocassion
+102,28,casual,ocassion

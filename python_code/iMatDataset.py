@@ -4,7 +4,9 @@ from __future__ import print_function
 
 import torch
 import re
-from torch._six import container_abcs, string_classes, int_classes
+import collections.abc as container_abcs
+string_classes = (str,)
+int_classes = (int,)
 import numpy as np
 from torch.utils.data._utils.collate import *
 import io
@@ -47,7 +49,7 @@ class iMatDataModule(pl.LightningDataModule):
 
     def __init__(self, data_root, batch_size=10, image_augmentations=list(), dataset_ratio=1.,
                  train_filename="train.json",
-                 val_filename="validation.json", attr_descr_filename="iMat_fashion_2018_label_map_228.csv",
+                 val_filename="validation.json", attr_descr_filename="/Users/guptatilak/Documents/visual-taxonomy-meesho/VisualFashionAttributePrediction/Data/iMaterialist/attribute_mapping.csv",
                  img_height=512, img_width=512, num_workers=4, **kwargs):
         """
         :param data_root: directory containing the json files
@@ -86,7 +88,7 @@ class iMatDataModule(pl.LightningDataModule):
         parser.add_argument("--val_filename", type=str, help="Name of validation set json file",
                             default="validation.json")
         parser.add_argument("--attr_descr_filename", type=str, help="Name of attribute description file",
-                            default="iMat_fashion_2018_label_map_228.csv")
+                            default="attribute_mapping.csv")
         parser.add_argument("--dataset_ratio", type=float, default=1., help="Which ratio of the dataset to download")
         return parser
 
@@ -431,8 +433,8 @@ def collate_varying_img_sizes(batch):
 
 if __name__ == "__main__":
     image_augmentations = [ColorJitter(brightness=1)]
-    dataset = iMatDataset("../Data/iMaterialist/validation.json", "../Data/iMaterialist/validation",
-                          "../Data/iMaterialist/iMat_fashion_2018_label_map_228.csv",
+    dataset = iMatDataset("/Users/guptatilak/Documents/visual-taxonomy-meesho/VisualFashionAttributePrediction/Data/iMaterialist/images_data_with_annotations.json", "/Users/guptatilak/Documents/visual-taxonomy-meesho/VisualFashionAttributePrediction/Data/iMaterialist/validation",
+                          "/Users/guptatilak/Documents/visual-taxonomy-meesho/VisualFashionAttributePrediction/Data/iMaterialist/attribute_mapping.csv",
                           image_augmentations=image_augmentations)
     # img, att = dataset[0]
     #
@@ -440,12 +442,13 @@ if __name__ == "__main__":
     # plt.imshow(dataset.trafo_tensor2pil(img))
     # plt.show()
 
-    dm = iMatDataModule("../Data/iMaterialist", dataset_ratio=0.001)
+    dm = iMatDataModule("/Users/guptatilak/Documents/visual-taxonomy-meesho/VisualFashionAttributePrediction/Data/iMaterialist/", dataset_ratio=0.001)
     dm.prepare_data()
     dm.setup()
 
-    for batch in dm.train_dataloader():
-        x, _ = batch
-        img = dm.train_set.trafo_tensor2pil(x[0])
-        plt.imshow(img)
-        plt.show()
+    # for batch in dm.train_dataloader():
+    #     x, _ = batch
+    #     img = dm.train_set.trafo_tensor2pil(x[0])
+    #     plt.imshow(img)
+    #     plt.show()
+    print('completed')
