@@ -3,6 +3,7 @@ from python_code.AttrPredModel import AttrPred_Resnet50
 import pytorch_lightning as pl
 from argparse import ArgumentParser
 from torchvision.transforms import *
+import torch
 
 if __name__ == "__main__":
     # Initialize argument parser
@@ -46,3 +47,7 @@ if __name__ == "__main__":
 
     # Start training
     trainer.fit(model, datamodule=dm)  # Pass the data module directly here
+
+    # After training is completed, save the model
+    model_path = "model_weights.pt"
+    torch.save(model.state_dict(), '/home/user/Documents/meesho-kaggle/Data/iMaterialist/model_weights.pt')

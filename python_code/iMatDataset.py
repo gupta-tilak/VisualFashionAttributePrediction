@@ -49,7 +49,7 @@ class iMatDataModule(pl.LightningDataModule):
 
     def __init__(self, data_root, batch_size=10, image_augmentations=list(), dataset_ratio=1.,
                  train_filename="train.json",
-                 val_filename="validation.json", attr_descr_filename="/Users/guptatilak/Documents/visual-taxonomy-meesho/VisualFashionAttributePrediction/Data/iMaterialist/attribute_mapping.csv",
+                 val_filename="validation.json", attr_descr_filename=r"Data\iMaterialist\attribute_mapping.csv",
                  img_height=512, img_width=512, num_workers=4, **kwargs):
         """
         :param data_root: directory containing the json files
@@ -115,8 +115,10 @@ class iMatDataModule(pl.LightningDataModule):
 
         # length already calculated here so that this time consuming process does not have to take place on every
         # gpu individually
-        self.train_length = len(os.listdir(self.train_img_path))
-        self.val_length = len(os.listdir(self.val_img_path))
+        # self.train_length = len(os.listdir(self.train_img_path))
+        # self.val_length = len(os.listdir(self.val_img_path))
+        self.train_length = 70213
+        self.val_length = 14043
 
     def setup(self, stage=None):
         """
@@ -137,13 +139,13 @@ class iMatDataModule(pl.LightningDataModule):
 
     def train_dataloader(self):
         return DataLoader(self.train_set,
-                          # collate_fn=collate_varying_img_sizes,
+                          collate_fn=collate_varying_img_sizes,
                           batch_size=self.batch_size,
                           num_workers=self.num_workers)
 
     def val_dataloader(self):
         return DataLoader(self.val_set,
-                          # collate_fn=collate_varying_img_sizes,
+                          collate_fn=collate_varying_img_sizes,
                           batch_size=self.batch_size,
                           num_workers=self.num_workers
                           )
@@ -219,19 +221,36 @@ class iMatDataset(Dataset):
         returns image as normalized tensor and ground truth attribute label as OH tensor.
         Attention: OH positions of attributes are attributeID - 1 !!! (attrIDs start from 1 but index from 0)
 
-        :param item:
-        :return:
+        :param item: index of the item to retrieve
+        :return: tuple of (image_tensor, attribute_one_hot_tensor)
+        :raises IndexError: if item is out of bounds
         """
         if item >= self.__len__():
-            raise IndexError
-        attr_OH = self.AttrIdxList2OH(self.labels[item]["labelId"], n=self.n_attrs)
+            raise IndexError(f"Index {item} is out of bounds for dataset of length {self.__len__()}")
+            
+         # Save the item index and label_id to a text file
+        with open("fetched_labels.txt", "a") as file:
+            file.write(f"Item: {item}")
+
+        label_id = self.labels[item]["labelId"]
+        attr_OH = self.AttrIdxList2OH(label_id, n=self.n_attrs)
+        
         img_path = os.path.join(self.img_dir, self.labels[item]["imageId"] + ".jpg")
 
-        # img retrieval
-        img_pil = Image.open(img_path)
-        img_tensor = self.trafo_pil2tensor(img_pil)
+       
+        # Image retrieval and error handling
+        try:
+            img_pil = Image.open(img_path)
+            if not img_pil:
+                raise IOError(f"Failed to load image at {img_path}")
+                
+            img_tensor = self.trafo_pil2tensor(img_pil)
+            return img_tensor, attr_OH
+            
+        except (IOError, OSError) as e:
+            raise IOError(f"Error loading image {img_path}: {str(e)}")
 
-        return img_tensor, attr_OH
+
 
     def get_attribute_description(self, attr_descr_file):
         with open(attr_descr_file, "r") as f:
@@ -365,7 +384,7 @@ def download_iMaterialistFashion(dataset, outdir, nmax=1000000000):
 ###
 # Collate Function, not needed if all images are resized to the same size
 ###
-def collate_varying_img_sizes(batch):
+def default_collate(batch):
     """If batch includes images with different sizes
     -> doesn't squeeze images but adds neutral padding to smaller images
     -> output size of batch determined by dimension of biggest image"""
@@ -430,11 +449,65 @@ def collate_varying_img_sizes(batch):
 
     raise TypeError(default_collate_err_msg_format.format(elem_type))
 
+def collate_varying_img_sizes(batch):
+    """
+    Collate function that handles batches with images of different sizes.
+    Adds neutral padding to smaller images.
+    
+    Args:
+        batch: List of tuples (image_tensor, label_tensor)
+    Returns:
+        Tuple of (batched_images, batched_labels)
+    """
+    # Filter out None values from the batch
+    batch = [b for b in batch if b is not None]
+    
+    # If batch is empty after filtering, raise an error
+    if len(batch) == 0:
+        raise RuntimeError("Batch is empty after filtering out invalid samples")
+    
+    elem = batch[0]
+    elem_type = type(elem)
+    
+    if isinstance(elem, torch.Tensor):
+        out = None
+        if torch.utils.data.get_worker_info() is not None:
+            numel = sum([x.numel() for x in batch])
+            storage = elem.storage()._new_shared(numel)
+            out = elem.new(storage)
+            
+        # Handle different image sizes
+        unique_shapes = np.unique(np.array([list(elem.shape) for elem in batch]), axis=0)
+        if len(unique_shapes) != 1:
+            batch = list(batch)
+            max_height = max([elem.shape[-2] for elem in batch])
+            max_width = max([elem.shape[-1] for elem in batch])
+            
+            for i, elem in enumerate(batch):
+                one_size = torch.zeros((3, max_height, max_width), dtype=elem.dtype, device=elem.device)
+                h, w = elem.shape[1:]
+                u = int((max_height - h) / 2)
+                l = int((max_width - w) / 2)
+                one_size[:, u:u + h, l:l + w] = elem
+                batch[i] = one_size
+            batch = tuple(batch)
+            
+        return torch.stack(batch, 0, out=out)
+    
+    elif isinstance(elem, tuple) and hasattr(elem, '_fields'):  # namedtuple
+        return elem_type(*(collate_varying_img_sizes(samples) for samples in zip(*batch)))
+    elif isinstance(elem, container_abcs.Sequence):
+        transposed = zip(*batch)
+        return [collate_varying_img_sizes(samples) for samples in transposed]
+    
+    # Handle other types as before...
+    else:
+        return default_collate(batch)
 
 if __name__ == "__main__":
     image_augmentations = [ColorJitter(brightness=1)]
-    dataset = iMatDataset("/Users/guptatilak/Documents/visual-taxonomy-meesho/VisualFashionAttributePrediction/Data/iMaterialist/images_data_with_annotations.json", "/Users/guptatilak/Documents/visual-taxonomy-meesho/VisualFashionAttributePrediction/Data/iMaterialist/validation",
-                          "/Users/guptatilak/Documents/visual-taxonomy-meesho/VisualFashionAttributePrediction/Data/iMaterialist/attribute_mapping.csv",
+    dataset = iMatDataset(r"C:\Users\vhema\Documents\meesho-kaggle\VisualFashionAttributePrediction\Data\iMaterialist\images_data_with_annotations.json", r"C:\Users\vhema\Documents\meesho-kaggle\VisualFashionAttributePrediction\Data\iMaterialist\validation",
+                          r"C:\Users\vhema\Documents\meesho-kaggle\VisualFashionAttributePrediction\Data\iMaterialist\attribute_mapping.csv",
                           image_augmentations=image_augmentations)
     # img, att = dataset[0]
     #
@@ -442,7 +515,7 @@ if __name__ == "__main__":
     # plt.imshow(dataset.trafo_tensor2pil(img))
     # plt.show()
 
-    dm = iMatDataModule("/Users/guptatilak/Documents/visual-taxonomy-meesho/VisualFashionAttributePrediction/Data/iMaterialist/", dataset_ratio=0.001)
+    dm = iMatDataModule(r"C:\Users\vhema\Documents\meesho-kaggle\VisualFashionAttributePrediction\Data\iMaterialist", dataset_ratio=1)
     dm.prepare_data()
     dm.setup()
 
